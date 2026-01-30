@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhavya Health Data Fetcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #8892b0;
+            font-size: 1.1rem;
+        }
+
+        .status-bar {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+
+        .status-dot.connected {
+            background: #2ed573;
+            box-shadow: 0 0 10px #2ed573;
+        }
+
+        .status-label {
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+
+        .status-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .card p {
+            color: #8892b0;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .date-inputs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .date-group {
+            flex: 1;
+        }
+
+        .date-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+
+        .date-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .date-group input:focus {
+            outline: none;
+            border-color: #3a7bd5;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #2ed573, #17c964);
+            color: #fff;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .progress-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-value.success { color: #2ed573; }
+        .stat-value.skip { color: #ffa502; }
+        .stat-value.fail { color: #ff4757; }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #8892b0;
+        }
+
+        .progress-bar-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border-radius: 10px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #8892b0;
+            font-size: 0.95rem;
+        }
+
+        .log-section {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-section h4 {
+            margin-bottom: 15px;
+            color: #8892b0;
+            font-size: 1rem;
+        }
+
+        .log-entries {
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .log-entry.info { background: rgba(58, 123, 213, 0.2); }
+        .log-entry.success { background: rgba(46, 213, 115, 0.2); }
+        .log-entry.warning { background: rgba(255, 165, 2, 0.2); }
+        .log-entry.error { background: rgba(255, 71, 87, 0.2); }
+        .log-entry.endpoint { background: rgba(255, 255, 255, 0.05); }
+
+        .log-time {
+            color: #8892b0;
+            min-width: 70px;
+        }
+
+        .log-icon {
+            min-width: 20px;
+        }
+
+        .endpoint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+
+        .endpoint-item {
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+
+        .endpoint-item.pending { border-color: rgba(255,255,255,0.1); }
+        .endpoint-item.fetching { border-color: #3a7bd5; background: rgba(58,123,213,0.2); }
+        .endpoint-item.success { border-color: #2ed573; }
+        .endpoint-item.no_data { border-color: #ffa502; }
+
+        .endpoint-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #8892b0;
+        }
+
+        .endpoint-item.fetching .endpoint-status {
+            background: #3a7bd5;
+            animation: pulse 1s infinite;
+        }
+
+        .endpoint-item.success .endpoint-status { background: #2ed573; }
+        .endpoint-item.no_data .endpoint-status { background: #ffa502; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .complete-message {
+            text-align: center;
+            padding: 30px;
+            background: rgba(46, 213, 115, 0.1);
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .complete-message.show {
+            display: block;
+        }
+
+        .complete-message h3 {
+            font-size: 1.5rem;
+            color: #2ed573;
+            margin-bottom: 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bhavya Health Data Fetcher</h1>
+            <p>Bihar State Health System Performance Data Collection</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot" id="dbStatus"></div>
+                <div>
+                    <div class="status-label">Database</div>
+                    <div class="status-value" id="dbStatusText">Checking...</div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-dot" id="tableStatus"></div>
+                <div>
+                    <div class="status-label">Table</div>
+                    <div class="status-value" id="tableStatusText">Checking...</div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div>
+                    <div class="status-label">Total Records</div>
+                    <div class="status-value" id="recordCount">-</div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div>
+                    <div class="status-label">API Endpoints</div>
+                    <div class="status-value">34</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <h3>📅 Fetch Today's Data</h3>
+                <p>Fetch health system data for today's date from all 34 API endpoints and save to database.</p>
+                <p style="color: #3a7bd5; font-weight: 600; margin-bottom: 20px;" id="todayDate"></p>
+                <button class="btn btn-secondary" id="fetchTodayBtn" onclick="fetchToday()">
+                    <span>⚡</span> Fetch Today's Data
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>📆 Fetch Date Range</h3>
+                <p>Select a date range to fetch historical data from all endpoints.</p>
+                <div class="date-inputs">
+                    <div class="date-group">
+                        <label>From Date</label>
+                        <input type="date" id="fromDate">
+                    </div>
+                    <div class="date-group">
+                        <label>To Date</label>
+                        <input type="date" id="toDate">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="fetchRangeBtn" onclick="fetchRange()">
+                    <span>🔄</span> Fetch Data Range
+                </button>
+            </div>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+            <div class="progress-header">
+                <div class="progress-title" id="progressTitle">Fetching Data...</div>
+                <div class="progress-stats">
+                    <div class="stat">
+                        <div class="stat-value success" id="successCount">0</div>
+                        <div class="stat-label">Success</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value skip" id="skipCount">0</div>
+                        <div class="stat-label">Skipped</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value fail" id="failCount">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">Initializing...</div>
+
+            <div class="endpoint-grid" id="endpointGrid"></div>
+
+            <div class="complete-message" id="completeMessage">
+                <h3>✅ Fetch Complete!</h3>
+                <p id="completeText"></p>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <h4>📋 Activity Log</h4>
+            <div class="log-entries" id="logEntries">
+                <div class="log-entry info">
+                    <span class="log-time">--:--:--</span>
+                    <span class="log-icon">ℹ️</span>
+                    <span>Waiting to start...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-detect API URL (works locally and on Render)
+        const API_URL = window.location.origin;
+        let isRunning = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('todayDate').textContent = `Date: ${today}`;
+            document.getElementById('fromDate').value = today;
+            document.getElementById('toDate').value = today;
+            checkStatus();
+            initEndpointGrid();
+        });
+
+        async function checkStatus() {
+            try {
+                const resp = await fetch(`${API_URL}/api/status`);
+                const data = await resp.json();
+
+                const dbDot = document.getElementById('dbStatus');
+                const dbText = document.getElementById('dbStatusText');
+                const tableDot = document.getElementById('tableStatus');
+                const tableText = document.getElementById('tableStatusText');
+                const count = document.getElementById('recordCount');
+
+                if (data.database === 'connected') {
+                    dbDot.classList.add('connected');
+                    dbText.textContent = 'Connected';
+                    addLog('Database connected successfully', 'success');
+
+                    if (data.table_exists) {
+                        tableDot.classList.add('connected');
+                        tableText.textContent = 'Ready';
+                        count.textContent = data.record_count.toLocaleString();
+                        addLog(`Table ready with ${data.record_count} records`, 'success');
+                    } else {
+                        tableText.textContent = 'Creating...';
+                        addLog('Table not found, will be created on first fetch', 'warning');
+                    }
+                } else {
+                    dbText.textContent = 'Disconnected';
+                    tableText.textContent = 'N/A';
+                    addLog('Database connection failed', 'error');
+                }
+            } catch (e) {
+                document.getElementById('dbStatusText').textContent = 'API Offline';
+                document.getElementById('tableStatusText').textContent = 'N/A';
+                addLog('Cannot connect to API server. Make sure backend is running.', 'error');
+            }
+        }
+
+        function initEndpointGrid() {
+            const endpoints = [
+                'staff_data', 'unique_patients', 'opd_patients', 'male_female_count',
+                'patient_journey_time', 'patient_waiting_time', 'eaushadhi_facility_count',
+                'ipd_facility_ward_bed', 'ipd_patient_admit', 'mlc_count', 'ae_opd_consultation',
+                'ae_observation_count', 'abdm_data', 'total_district', 'total_live_district',
+                'total_block', 'total_live_block', 'hsc_count', 'hsc_patient_registered',
+                'cho_anm_count', 'hsc_patient_till_now', 'patient_visits_count_hsc',
+                'state_dashboard_patient_count', 'citizen_portal_facility_count',
+                'patient_first_registration_opd', 'facilitator_asha_count', 'bcm_dcm_count',
+                'dist_block_village_panch_hsc', 'asha_household', 'asha_beneficiary',
+                'asha_eligible_couple', 'asha_pregnant_women', 'total_child_care', 'delivery_count'
+            ];
+
+            const grid = document.getElementById('endpointGrid');
+            grid.innerHTML = endpoints.map(ep => `
+                <div class="endpoint-item pending" id="ep-${ep}">
+                    <div class="endpoint-status"></div>
+                    <span>${ep.replace(/_/g, ' ')}</span>
+                </div>
+            `).join('');
+        }
+
+        function resetEndpointGrid() {
+            document.querySelectorAll('.endpoint-item').forEach(item => {
+                item.className = 'endpoint-item pending';
+            });
+        }
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('logEntries');
+            const time = new Date().toLocaleTimeString();
+            const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', endpoint: '🔗' };
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-icon">${icons[type] || 'ℹ️'}</span>
+                <span>${message}</span>
+            `;
+            log.insertBefore(entry, log.firstChild);
+
+            // Keep only last 100 entries
+            while (log.children.length > 100) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        function setButtonsDisabled(disabled) {
+            document.getElementById('fetchTodayBtn').disabled = disabled;
+            document.getElementById('fetchRangeBtn').disabled = disabled;
+            isRunning = disabled;
+        }
+
+        function fetchToday() {
+            if (isRunning) return;
+            startFetch(`${API_URL}/api/fetch/today`);
+        }
+
+        function fetchRange() {
+            if (isRunning) return;
+            const from = document.getElementById('fromDate').value;
+            const to = document.getElementById('toDate').value;
+
+            if (!from || !to) {
+                addLog('Please select both From and To dates', 'warning');
+                return;
+            }
+
+            if (new Date(from) > new Date(to)) {
+                addLog('From date cannot be after To date', 'error');
+                return;
+            }
+
+            startFetch(`${API_URL}/api/fetch/range`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from_date: from, to_date: to })
+            });
+        }
+
+        async function startFetch(url, options = {}) {
+            setButtonsDisabled(true);
+            resetEndpointGrid();
+
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('completeMessage').classList.remove('show');
+            document.getElementById('successCount').textContent = '0';
+            document.getElementById('skipCount').textContent = '0';
+            document.getElementById('failCount').textContent = '0';
+            document.getElementById('progressBar').style.width = '0%';
+
+            addLog('Starting data fetch...', 'info');
+
+            try {
+                const response = await fetch(url, options);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                let buffer = '';
+                let totalEndpoints = 34;
+                let currentEndpoint = 0;
+                let currentDate = '';
+                let totalDates = 1;
+                let currentDateIndex = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleSSEEvent(data);
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (e) {
+                addLog(`Fetch error: ${e.message}`, 'error');
+            }
+
+            setButtonsDisabled(false);
+            checkStatus();
+        }
+
+        function handleSSEEvent(data) {
+            switch (data.type) {
+                case 'start':
+                    addLog(`Starting fetch for ${data.total_dates} date(s), ${data.total_endpoints} endpoints each`, 'info');
+                    break;
+
+                case 'log':
+                    addLog(data.message, 'info');
+                    break;
+
+                case 'date_start':
+                    document.getElementById('progressTitle').textContent = `Processing: ${data.date}`;
+                    document.getElementById('progressText').textContent = `Date ${data.date_index} of ${data.total_dates}`;
+                    addLog(`Processing date: ${data.date}`, 'info');
+                    resetEndpointGrid();
+                    break;
+
+                case 'date_skip':
+                    addLog(`Skipped ${data.date}: ${data.reason}`, 'warning');
+                    const skipCount = parseInt(document.getElementById('skipCount').textContent) + 1;
+                    document.getElementById('skipCount').textContent = skipCount;
+                    break;
+
+                case 'endpoint_start':
+                    const epStart = document.getElementById(`ep-${data.endpoint}`);
+                    if (epStart) epStart.className = 'endpoint-item fetching';
+                    const progress = (data.index / data.total) * 100;
+                    document.getElementById('progressBar').style.width = `${progress}%`;
+                    document.getElementById('progressText').textContent = `Fetching: ${data.desc} (${data.index}/${data.total})`;
+                    break;
+
+                case 'endpoint_done':
+                    const epDone = document.getElementById(`ep-${data.endpoint}`);
+                    if (epDone) epDone.className = `endpoint-item ${data.status}`;
+                    break;
+
+                case 'date_done':
+                    if (data.status === 'success') {
+                        addLog(`✅ ${data.date}: ${data.message}`, 'success');
+                        const sCount = parseInt(document.getElementById('successCount').textContent) + 1;
+                        document.getElementById('successCount').textContent = sCount;
+                    } else {
+                        addLog(`❌ ${data.date}: ${data.message}`, 'error');
+                        const fCount = parseInt(document.getElementById('failCount').textContent) + 1;
+                        document.getElementById('failCount').textContent = fCount;
+                    }
+                    break;
+
+                case 'complete':
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressTitle').textContent = 'Fetch Complete!';
+                    document.getElementById('progressText').textContent = `Total records in database: ${data.total_records}`;
+                    document.getElementById('completeMessage').classList.add('show');
+                    document.getElementById('completeText').textContent =
+                        `Success: ${data.success} | Skipped: ${data.skipped} | Failed: ${data.failed}`;
+                    document.getElementById('recordCount').textContent = data.total_records.toLocaleString();
+                    // Update table status to ready since we successfully completed
+                    document.getElementById('tableStatus').classList.add('connected');
+                    document.getElementById('tableStatusText').textContent = 'Ready';
+                    addLog(`Fetch complete! Success: ${data.success}, Skipped: ${data.skipped}, Failed: ${data.failed}`, 'success');
+                    break;
+
+                case 'error':
+                    addLog(data.message, 'error');
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
