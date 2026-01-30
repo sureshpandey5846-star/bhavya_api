@@ -145,9 +145,27 @@
             font-size: 1rem;
         }
 
-        .date-group input:focus {
+        .date-group input:focus,
+        .date-group select:focus {
             outline: none;
             border-color: #3a7bd5;
+        }
+
+        .date-group select,
+        .date-group input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .date-group select option {
+            background: #1a1a2e;
+            color: #fff;
         }
 
         .btn {
@@ -426,8 +444,8 @@
             </div>
 
             <div class="card">
-                <h3>📆 Fetch Date Range</h3>
-                <p>Select a date range to fetch historical data from all endpoints.</p>
+                <h3>📆 Fetch Date Range (Daily)</h3>
+                <p>Select a date range to fetch daily historical data from all endpoints.</p>
                 <div class="date-inputs">
                     <div class="date-group">
                         <label>From Date</label>
@@ -439,7 +457,79 @@
                     </div>
                 </div>
                 <button class="btn btn-primary" id="fetchRangeBtn" onclick="fetchRange()">
-                    <span>🔄</span> Fetch Data Range
+                    <span>🔄</span> Fetch Daily Data
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>📊 Fetch Monthly Data</h3>
+                <p>Select a month range to fetch aggregated monthly data from all endpoints.</p>
+                <div class="date-inputs">
+                    <div class="date-group">
+                        <label>From Month</label>
+                        <select id="fromMonth" class="month-select">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="date-group">
+                        <label>From Year</label>
+                        <input type="number" id="fromYearMonth" min="2020" max="2030" value="2025">
+                    </div>
+                </div>
+                <div class="date-inputs">
+                    <div class="date-group">
+                        <label>To Month</label>
+                        <select id="toMonth" class="month-select">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="date-group">
+                        <label>To Year</label>
+                        <input type="number" id="toYearMonth" min="2020" max="2030" value="2025">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="fetchMonthlyBtn" onclick="fetchMonthly()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);">
+                    <span>📊</span> Fetch Monthly Data
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>📈 Fetch Yearly Data</h3>
+                <p>Select a year range to fetch aggregated yearly data from all endpoints.</p>
+                <div class="date-inputs">
+                    <div class="date-group">
+                        <label>From Year</label>
+                        <input type="number" id="fromYear" min="2020" max="2030" value="2024">
+                    </div>
+                    <div class="date-group">
+                        <label>To Year</label>
+                        <input type="number" id="toYear" min="2020" max="2030" value="2025">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="fetchYearlyBtn" onclick="fetchYearly()" style="background: linear-gradient(135deg, #a55eea, #8854d0);">
+                    <span>📈</span> Fetch Yearly Data
                 </button>
             </div>
         </div>
@@ -495,10 +585,22 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('todayDate').textContent = `Date: ${today}`;
-            document.getElementById('fromDate').value = today;
-            document.getElementById('toDate').value = today;
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('todayDate').textContent = `Date: ${todayStr}`;
+            document.getElementById('fromDate').value = todayStr;
+            document.getElementById('toDate').value = todayStr;
+
+            // Set default month/year values
+            const currentMonth = today.getMonth() + 1;
+            const currentYear = today.getFullYear();
+            document.getElementById('fromMonth').value = currentMonth;
+            document.getElementById('toMonth').value = currentMonth;
+            document.getElementById('fromYearMonth').value = currentYear;
+            document.getElementById('toYearMonth').value = currentYear;
+            document.getElementById('fromYear').value = currentYear - 1;
+            document.getElementById('toYear').value = currentYear;
+
             checkStatus();
             initEndpointGrid();
         });
@@ -592,6 +694,8 @@
         function setButtonsDisabled(disabled) {
             document.getElementById('fetchTodayBtn').disabled = disabled;
             document.getElementById('fetchRangeBtn').disabled = disabled;
+            document.getElementById('fetchMonthlyBtn').disabled = disabled;
+            document.getElementById('fetchYearlyBtn').disabled = disabled;
             isRunning = disabled;
         }
 
@@ -620,6 +724,70 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ from_date: from, to_date: to })
             });
+        }
+
+        function fetchMonthly() {
+            if (isRunning) return;
+            const fromMonth = parseInt(document.getElementById('fromMonth').value);
+            const fromYear = parseInt(document.getElementById('fromYearMonth').value);
+            const toMonth = parseInt(document.getElementById('toMonth').value);
+            const toYear = parseInt(document.getElementById('toYearMonth').value);
+
+            if (!fromMonth || !fromYear || !toMonth || !toYear) {
+                addLog('Please select all month and year fields', 'warning');
+                return;
+            }
+
+            if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
+                addLog('From month/year cannot be after To month/year', 'error');
+                return;
+            }
+
+            addLog(`Fetching monthly data from ${getMonthName(fromMonth)} ${fromYear} to ${getMonthName(toMonth)} ${toYear}`, 'info');
+
+            startFetch(`${API_URL}/api/fetch/monthly`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from_year: fromYear,
+                    from_month: fromMonth,
+                    to_year: toYear,
+                    to_month: toMonth
+                })
+            });
+        }
+
+        function fetchYearly() {
+            if (isRunning) return;
+            const fromYear = parseInt(document.getElementById('fromYear').value);
+            const toYear = parseInt(document.getElementById('toYear').value);
+
+            if (!fromYear || !toYear) {
+                addLog('Please select both From and To years', 'warning');
+                return;
+            }
+
+            if (fromYear > toYear) {
+                addLog('From year cannot be after To year', 'error');
+                return;
+            }
+
+            addLog(`Fetching yearly data from ${fromYear} to ${toYear}`, 'info');
+
+            startFetch(`${API_URL}/api/fetch/yearly`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from_year: fromYear,
+                    to_year: toYear
+                })
+            });
+        }
+
+        function getMonthName(month) {
+            const months = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+            return months[month];
         }
 
         async function startFetch(url, options = {}) {
